@@ -21,12 +21,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 #include "keyball.h"
-#include "drivers/pmw3360/pmw3360.h"
+#include "drivers/pmw3610/pmw3610.h"
 
 #include <string.h>
 
 const uint8_t CPI_DEFAULT    = KEYBALL_CPI_DEFAULT / 100;
-const uint8_t CPI_MAX        = pmw3360_MAXCPI + 1;
+const uint8_t CPI_MAX        = pmw3610_MAXCPI + 1;
 const uint8_t SCROLL_DIV_MAX = 7;
 
 const uint16_t AML_TIMEOUT_MIN = 100;
@@ -140,26 +140,26 @@ static void add_scroll_div(int8_t delta) {
 
 #if KEYBALL_MODEL == 46
 void keyboard_pre_init_kb(void) {
-    keyball.this_have_ball = pmw3360_init();
+    keyball.this_have_ball = pmw3610_init();
     keyboard_pre_init_user();
 }
 #endif
 
 void pointing_device_driver_init(void) {
 #if KEYBALL_MODEL != 46
-    keyball.this_have_ball = pmw3360_init();
+    keyball.this_have_ball = pmw3610_init();
 #endif
     if (keyball.this_have_ball) {
 #if defined(KEYBALL_PMW3360_UPLOAD_SROM_ID)
 #    if KEYBALL_PMW3360_UPLOAD_SROM_ID == 0x04
-        pmw3360_srom_upload(pmw3360_srom_0x04);
+        pmw3610_srom_upload(pmw3610_srom_0x04);
 #    elif KEYBALL_PMW3360_UPLOAD_SROM_ID == 0x81
-        pmw3360_srom_upload(pmw3360_srom_0x81);
+        pmw3610_srom_upload(pmw3610_srom_0x81);
 #    else
 #        error Invalid value for KEYBALL_PMW3360_UPLOAD_SROM_ID. Please choose 0x04 or 0x81 or disable it.
 #    endif
 #endif
-        pmw3360_cpi_set(CPI_DEFAULT - 1);
+        pmw3610_cpi_set(CPI_DEFAULT - 1);
     }
 }
 
@@ -173,8 +173,8 @@ void pointing_device_driver_set_cpi(uint16_t cpi) {
 
 __attribute__((weak)) void keyball_on_apply_motion_to_mouse_move(keyball_motion_t *m, report_mouse_t *r, bool is_left) {
 #if KEYBALL_MODEL == 61 || KEYBALL_MODEL == 39 || KEYBALL_MODEL == 147 || KEYBALL_MODEL == 44
-    r->x = clip2int8(m->y);
-    r->y = clip2int8(m->x);
+    r->x = clip2int8(m->x);
+    r->y = clip2int8(m->y);
     if (is_left) {
         r->x = -r->x;
         r->y = -r->y;
@@ -198,8 +198,8 @@ __attribute__((weak)) void keyball_on_apply_motion_to_mouse_scroll(keyball_motio
 
     // apply to mouse report.
 #if KEYBALL_MODEL == 61 || KEYBALL_MODEL == 39 || KEYBALL_MODEL == 147 || KEYBALL_MODEL == 44
-    r->h = clip2int8(y);
-    r->v = -clip2int8(x);
+    r->h = -clip2int8(x);
+    r->v = -clip2int8(y);
     if (is_left) {
         r->h = -r->h;
         r->v = -r->v;
@@ -311,8 +311,8 @@ bool auto_mouse_activation(report_mouse_t mouse_report) {
 report_mouse_t pointing_device_driver_get_report(report_mouse_t rep) {
     // fetch from optical sensor.
     if (keyball.this_have_ball) {
-        pmw3360_motion_t d = {0};
-        if (pmw3360_motion_burst(&d)) {
+        pmw3610_motion_t d = {0};
+        if (pmw3610_motion_burst(&d)) {
             ATOMIC_BLOCK_FORCEON {
                 keyball.this_motion.x = add16(keyball.this_motion.x, d.x);
                 keyball.this_motion.y = add16(keyball.this_motion.y, d.y);
@@ -321,7 +321,7 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t rep) {
     }
     // report mouse event, if keyboard is primary.
     if (is_keyboard_master() && should_report()) {
-        // modify mouse report by PMW3360 motion.
+        // modify mouse report by PMW3610 motion.
         motion_to_mouse(&keyball.this_motion, &rep, is_keyboard_left(), keyball.scroll_mode);
         motion_to_mouse(&keyball.that_motion, &rep, !is_keyboard_left(), keyball.scroll_mode ^ keyball.this_have_ball);
         // store mouse report for OLED.
@@ -602,7 +602,7 @@ void keyball_set_cpi(uint8_t cpi) {
     keyball.cpi_value   = cpi;
     keyball.cpi_changed = true;
     if (keyball.this_have_ball) {
-        pmw3360_cpi_set(cpi == 0 ? CPI_DEFAULT - 1 : cpi - 1);
+        pmw3610_cpi_set(cpi == 0 ? CPI_DEFAULT - 1 : cpi - 1);
     }
 }
 
@@ -764,10 +764,10 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
             } break;
 
             case CPI_I100:
-                add_cpi(1);
+                add_cpi(2);
                 break;
             case CPI_D100:
-                add_cpi(-1);
+                add_cpi(-2);
                 break;
             case CPI_I1K:
                 add_cpi(10);
