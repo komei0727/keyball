@@ -312,7 +312,7 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t rep) {
     // fetch from optical sensor.
     if (keyball.this_have_ball) {
         pmw3610_motion_t d = {0};
-        if (pmw3610_motion_burst(&d)) {
+        if (pmw3610_motion_read(&d)) {
             ATOMIC_BLOCK_FORCEON {
                 keyball.this_motion.x = add16(keyball.this_motion.x, d.x);
                 keyball.this_motion.y = add16(keyball.this_motion.y, d.y);
